@@ -164,12 +164,13 @@ public class GameManager : MonoBehaviour
             AddRewardBoard(boardreward.time);
             return;
         }
-        if (GetActiveBlockCount() == 0)
+        var activeblockcount = GetActiveBlockCount();
+        if (activeblockcount == 0)
         {
             AddRewardBoard(boardreward.clear);
             EndEpisode();
         }
-        AddRewardBoard(boardreward.time);
+        AddRewardBoard(boardreward.time*activeblockcount);
         //ブロック
         for (int i = 0; i < blockcount; i++)
         {
@@ -219,15 +220,15 @@ public class GameManager : MonoBehaviour
                 blockhit = 0.01f,
                 drop = -1f,
                 clear = 0.25f,
-                time = 0.001f
+                time = -0.001f
             };
         }
         else if(session == 2)
         {
             boardreward = new BoardRewards
             {
-                ballhit = 0.025f,
-                blockhit = 0.1f,
+                ballhit = 0.01f,
+                blockhit = 0.15f,
                 drop = -1f,
                 clear = 0.5f,
                 time = -0.0002f

@@ -37,18 +37,21 @@ public class Board : Agent
     {
         var action = vectorAction[0];
         var pos = Zero;
+        const float num = 1.1f;
         if (automove)
         {
             var ballpos = gamemanager.ball.gameObject.transform.localPosition.x;
             var boardpos = boardController.gameObject.transform.localPosition.x;
-            if (boardpos - ballpos > Random.Range(-1f, 1f) * 0.5f) pos = Left;
-            else pos = Right;
+            if (boardpos - ballpos > action) pos = Left*num;
+            else pos = Right*num;
             boardController.AddForce(pos);
             return;
         }
+        /*  Discrete BranchSize=1 0.Size=3
         if (action == 1) pos = Right;
         else if (action == 2) pos = Left;
         boardController.AddForce(pos);
+        */
     }
     public override void Heuristic(float[] actionsOut)
     {
