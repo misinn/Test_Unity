@@ -11,8 +11,8 @@ public class Block : Agent
     private Collider collid;
     public float speed;
     public bool enablemove;
-    public Vector3 Velocity => rigid.velocity;
-
+    public bool IsPlayer { get; private set; }
+    public Vector3 Velocity { get { return rigid.velocity; } }
     public Observation Observation;
     public override void Initialize()
     {
@@ -22,6 +22,7 @@ public class Block : Agent
         collid = GetComponent<Collider>();
         Observation = new Observation(8);
         alreadyInitalized = true;
+        IsPlayer = this.gameObject.name == "PlayerBlockAgent";
     }
     private bool alreadyInitalized = false;
     public override void CollectObservations(VectorSensor sensor)
@@ -86,6 +87,10 @@ public class Block : Agent
         if (other.CompareTag("blocklimit"))
         {
             rigid.AddForce(Up * speed * 20 * Time.deltaTime, ForceMode.VelocityChange);
+        }
+        else if (other.CompareTag("blocktrigger"))
+        {
+            gamemanager.OnBlockStayBlockTrigger(this);
         }
     }
     [HideInInspector]public int moveDir { get; set; }

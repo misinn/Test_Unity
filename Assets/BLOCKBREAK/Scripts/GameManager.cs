@@ -41,12 +41,16 @@ public class GameManager : MonoBehaviour
         blockslastaction = new int[blockcount];
         for (int i = 1; i < blockcount; i++)
         {
-            if (i == 1 && AddPlayerBlock)
+            if (i == 1)
             {
-                blocks[1] = playerBlock;
-                blocksColor[1] = blocks[1].gameObject.GetComponent<Renderer>();
-                blocks[1].Initialize();
-                continue;
+                if (AddPlayerBlock)
+                {
+                    blocks[1] = playerBlock;
+                    blocksColor[1] = blocks[1].gameObject.GetComponent<Renderer>();
+                    blocks[1].Initialize();
+                    continue;
+                }
+                Destroy(playerBlock.gameObject);
             } 
             var obj = Instantiate(block,transform);
             blocks[i] = obj.GetComponent<Block>();
@@ -313,6 +317,10 @@ public class GameManager : MonoBehaviour
     {
         AddRewardBoard(boardreward.drop);
         EndEpisode();
+    }
+    public void OnBlockStayBlockTrigger(Block block)
+    {
+        AddRewardBlock(block, blockreward.time * -0.5f);
     }
     public void AddRewardBlock(Block block, float reward)
     {
