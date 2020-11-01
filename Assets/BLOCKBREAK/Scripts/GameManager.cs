@@ -10,6 +10,8 @@ public class GameManager : MonoBehaviour
     public Block block;
     public int blockcount;
     public int MaxStep;
+    public bool AddPlayerBlock;
+    public Block playerBlock;
     private Block[] blocks;
     private Renderer[] blocksColor;
     public Color[] Colors;
@@ -19,6 +21,7 @@ public class GameManager : MonoBehaviour
     private Color[] defaltBlocksColor = new Color[60];
     private int session = 0;
     private int[] blockslastaction;
+    private float boardlastaction;
     public void Start()
     {
         Application.targetFrameRate = 60;
@@ -38,6 +41,13 @@ public class GameManager : MonoBehaviour
         blockslastaction = new int[blockcount];
         for (int i = 1; i < blockcount; i++)
         {
+            if (i == 1 && AddPlayerBlock)
+            {
+                blocks[1] = playerBlock;
+                blocksColor[1] = blocks[1].gameObject.GetComponent<Renderer>();
+                blocks[1].Initialize();
+                continue;
+            } 
             var obj = Instantiate(block,transform);
             blocks[i] = obj.GetComponent<Block>();
             obj.GetComponent<RayPerceptionSensorComponent3D>().SensorName = ("BlockSensor"+i).ToString();
@@ -61,7 +71,8 @@ public class GameManager : MonoBehaviour
     {
         //ball
         ball.transform.position = defaltBallPos;
-        ball.velocity = new Vector3(0f, 0f, -1f) * ball.speed;
+        ball.velocity = new Vector3(0f, 0f, -1f) * ball.DefaultSpeed;
+        ball.speed = ball.DefaultSpeed;
         ball.Skip = true;
         if (session == 0) ball.velocity.x += Random.Range(-1.5f, 1.5f);
         //board
@@ -132,7 +143,7 @@ public class GameManager : MonoBehaviour
         BoardObservation.AddObservation(ballvec.z);
         BoardObservation.AddObservation(boardpos.x);
         BoardObservation.AddObservation(boardvec.x);
-
+        BoardObservation.AddObservation(boardlastaction);
         board.Observation = BoardObservation;
         //ブロック
         for (int i = 0; i < blockcount; i++)
@@ -164,12 +175,14 @@ public class GameManager : MonoBehaviour
             AddRewardBoard(boardreward.time);
             return;
         }
-        var activeblockcount = GetActiveBlockCount();
+        var activeblockcount = ActiveBlockCount();
         if (activeblockcount == 0)
         {
             AddRewardBoard(boardreward.clear);
             EndEpisode();
         }
+        AddRewardBoard(boardreward.actionchange * Abs(board.lastaction - boardlastaction));
+        boardlastaction = board.lastaction;
         AddRewardBoard(boardreward.time*activeblockcount);
         //ブロック
         for (int i = 0; i < blockcount; i++)
@@ -209,7 +222,8 @@ public class GameManager : MonoBehaviour
                 blockhit = 0f,
                 drop = -1f,
                 clear = 0f,
-                time = -0.0008f
+                time = -0.0008f,
+                actionchange =0f
             };
         }
         else if(session==1)
@@ -220,7 +234,8 @@ public class GameManager : MonoBehaviour
                 blockhit = 0.01f,
                 drop = -1f,
                 clear = 0.25f,
-                time = -0.001f
+                time = -0.001f,
+                actionchange = 0f
             };
         }
         else if(session == 2)
@@ -231,7 +246,8 @@ public class GameManager : MonoBehaviour
                 blockhit = 0.15f,
                 drop = -1f,
                 clear = 0.5f,
-                time = -0.0002f
+                time = -0.0002f,
+                actionchange = -0.001f
             };
         }
         
@@ -281,7 +297,16 @@ public class GameManager : MonoBehaviour
     }
     public void OnBallHitVirtualBlock(Block block)
     {
-        AddRewardBlock(block,blockreward.ballhit);
+        float prirew = (ActiveBlockCount() - 1f) / blockcount * blockreward.ballhit;
+        float pubrew = 1f / blockcount * blockreward.ballhit;
+        AddRewardBlock(block,prirew);
+        for (int i = 0; i < blockcount; i++)
+        {
+            if (blocks[i].IsActive)
+            {
+                AddRewardBlock(blocks[i], pubrew);
+            }
+        }
         block.gameObject.SetActive(false);
     }
     public void OnBallDroped()
@@ -313,6 +338,7 @@ public class GameManager : MonoBehaviour
         public float drop;
         public float clear;
         public float time;
+        public float actionchange;
     }
     public struct BlockRewards
     {
@@ -321,7 +347,7 @@ public class GameManager : MonoBehaviour
         public float actionchange;
         public float move;
     }
-    public int GetActiveBlockCount()
+    public int ActiveBlockCount()
     {
         int ans = 0;
         for (int i = 0; i < blockcount; i++)

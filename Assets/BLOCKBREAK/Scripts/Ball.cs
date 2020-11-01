@@ -8,7 +8,10 @@ public class Ball : MonoBehaviour
 {
     private GameManager gamemanager;
     private CharacterController characon;
-    public float speed;
+    [SerializeField] private float defaltspeed;
+    public float DefaultSpeed { get=>defaltspeed; private set { defaltspeed = value; } }
+    [HideInInspector]public float speed;
+    public float accelOnHit;
     [HideInInspector]public Vector3 velocity;
     public bool Skip
     {
@@ -29,6 +32,7 @@ public class Ball : MonoBehaviour
     {
         gamemanager = GetComponentInParent<GameManager>();
         characon = GetComponent<CharacterController>();
+        velocity = new Vector3(0, 0, -1f);
     }
     private void FixedUpdate()
     {
@@ -39,7 +43,7 @@ public class Ball : MonoBehaviour
             return;
         }
         this.velocity.z -= 0.0001f;
-        var velocity = this.velocity*Time.fixedDeltaTime;
+        var velocity = this.velocity/ GetxzMag(this.velocity)*speed*Time.fixedDeltaTime;
         characon.Move(velocity);
     }
     private void OnControllerColliderHit(ControllerColliderHit hit)
@@ -50,6 +54,7 @@ public class Ball : MonoBehaviour
         var pvec = velocity - nvec;
         var bound = pvec - nvec;
         velocity = bound;
+        speed += accelOnHit;
         velocity.y = 0;
         if (hitGameObj.CompareTag("block"))
         {

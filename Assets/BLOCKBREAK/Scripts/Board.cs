@@ -16,7 +16,7 @@ public class Board : Agent
     {
         boardController = GetComponentInChildren<BoardController>();
         gamemanager = GetComponentInParent<GameManager>();
-        Observation = new Observation(6);
+        Observation = new Observation(7);
         session = (int)Academy.Instance.EnvironmentParameters.GetWithDefault("session", 2);
     }
     public override void OnEpisodeBegin()
@@ -33,11 +33,12 @@ public class Board : Agent
 
         }
     }
+    public float lastaction = 0;
     public override void OnActionReceived(float[] vectorAction)
     {
         var action = vectorAction[0];
         var pos = Zero;
-        const float num = 1.1f;
+        const float num = 2f;
         if (automove)
         {
             var ballpos = gamemanager.ball.gameObject.transform.localPosition.x;
@@ -45,6 +46,7 @@ public class Board : Agent
             if (boardpos - ballpos > action) pos = Left*num;
             else pos = Right*num;
             boardController.AddForce(pos);
+            lastaction = action;
             return;
         }
         /*  Discrete BranchSize=1 0.Size=3

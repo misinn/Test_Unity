@@ -79,6 +79,14 @@ public class Block : Agent
         {
             gamemanager.OnBallHitVirtualBlock(this);
         }
+
+    }
+    public void OnTriggerStay(Collider other)
+    {
+        if (other.CompareTag("blocklimit"))
+        {
+            rigid.AddForce(Up * speed * 20 * Time.deltaTime, ForceMode.VelocityChange);
+        }
     }
     [HideInInspector]public int moveDir { get; set; }
     Vector3 Zero = Vector3.zero;
