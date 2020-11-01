@@ -43,7 +43,7 @@ public class Ball : MonoBehaviour
             return;
         }
         this.velocity.z -= 0.0001f;
-        var velocity = this.velocity/ GetxzMag(this.velocity)*speed*Time.deltaTime;
+        var velocity = this.velocity/ GetxzMag(this.velocity)*speed*Time.fixedDeltaTime;
         characon.Move(velocity);
     }
     private void OnControllerColliderHit(ControllerColliderHit hit)

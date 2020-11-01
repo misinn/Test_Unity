@@ -10,7 +10,6 @@ TagManager:
   - bottom
   - ball
   - blocklimit
-  - blocktrigger
   layers:
   - Default
   - TransparentFX
