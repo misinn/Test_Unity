@@ -3,11 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
-//
-//
 
-//
-//revertの確認 消える？
 public class Block : Agent
 {
     private GameManager gamemanager;

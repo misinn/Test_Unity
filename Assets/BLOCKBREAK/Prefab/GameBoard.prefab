@@ -929,6 +929,22 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!54 &247565635906593921
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7556580357373161837}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 116
+  m_CollisionDetection: 0
 --- !u!114 &4938350249148045263
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1211,18 +1227,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 48e5f8bd83bba4b409f4200e80531b16, type: 3}
---- !u!114 &7556580357199667931 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9026008408616317138, guid: 48e5f8bd83bba4b409f4200e80531b16,
-    type: 3}
-  m_PrefabInstance: {fileID: 1557276934551310857}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7556580357199667934}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d9fe323794044aa895979b07d0321c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &7556580357199667935 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9026008408616317142, guid: 48e5f8bd83bba4b409f4200e80531b16,
@@ -1235,6 +1239,18 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1557276934551310857}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7556580357199667931 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9026008408616317138, guid: 48e5f8bd83bba4b409f4200e80531b16,
+    type: 3}
+  m_PrefabInstance: {fileID: 1557276934551310857}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7556580357199667934}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d9fe323794044aa895979b07d0321c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &3787307964589608257
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1476,15 +1492,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 48e5f8bd83bba4b409f4200e80531b16, type: 3}
---- !u!4 &2479261534641160457 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 9026008408616317142, guid: 48e5f8bd83bba4b409f4200e80531b16,
-    type: 3}
-  m_PrefabInstance: {fileID: 6857515387384246751}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2479261534641160456 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 9026008408616317143, guid: 48e5f8bd83bba4b409f4200e80531b16,
+    type: 3}
+  m_PrefabInstance: {fileID: 6857515387384246751}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2479261534641160457 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 9026008408616317142, guid: 48e5f8bd83bba4b409f4200e80531b16,
     type: 3}
   m_PrefabInstance: {fileID: 6857515387384246751}
   m_PrefabAsset: {fileID: 0}
@@ -1530,12 +1546,12 @@ PrefabInstance:
     - target: {fileID: 2203139148640900162, guid: eff3a9657ccc64a8785ceca759b4db18,
         type: 3}
       propertyPath: accelOnHit
-      value: 0.02
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2203139148640900162, guid: eff3a9657ccc64a8785ceca759b4db18,
         type: 3}
       propertyPath: defaltspeed
-      value: 8
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 2203139148640900163, guid: eff3a9657ccc64a8785ceca759b4db18,
         type: 3}
@@ -1622,7 +1638,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 2203139148640900175, guid: eff3a9657ccc64a8785ceca759b4db18,
+        type: 3}
+      propertyPath: m_IsTrigger
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 2203139148640900163, guid: eff3a9657ccc64a8785ceca759b4db18, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: eff3a9657ccc64a8785ceca759b4db18, type: 3}
 --- !u!1 &7556580357373161837 stripped
 GameObject:
