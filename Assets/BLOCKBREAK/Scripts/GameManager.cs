@@ -41,16 +41,20 @@ public class GameManager : MonoBehaviour
         blockslastaction = new int[blockcount];
         for (int i = 1; i < blockcount; i++)
         {
-            if (i == 1 && AddPlayerBlock)
+            if (i == 1)
             {
-                blocks[1] = playerBlock;
-                blocksColor[1] = blocks[1].gameObject.GetComponent<Renderer>();
-                blocks[1].Initialize();
-                continue;
-            } 
-            var obj = Instantiate(block,transform);
+                if (AddPlayerBlock)
+                {
+                    blocks[1] = playerBlock;
+                    blocksColor[1] = blocks[1].gameObject.GetComponent<Renderer>();
+                    blocks[1].Initialize();
+                    continue;
+                }
+                Destroy(playerBlock.gameObject);
+            }
+            var obj = Instantiate(block, transform);
             blocks[i] = obj.GetComponent<Block>();
-            obj.GetComponent<RayPerceptionSensorComponent3D>().SensorName = ("BlockSensor"+i).ToString();
+            obj.GetComponent<RayPerceptionSensorComponent3D>().SensorName = ("BlockSensor" + i).ToString();
             blocksColor[i] = obj.GetComponent<Renderer>();
             blocks[i].Initialize();
         }
@@ -94,7 +98,7 @@ public class GameManager : MonoBehaviour
         {
             blocks[i].SetTrigger(session == 0);
         }
-        
+
     }
     public void Update()
     {
@@ -148,7 +152,7 @@ public class GameManager : MonoBehaviour
         //ブロック
         for (int i = 0; i < blockcount; i++)
         {
-            ref var obs =ref BlockObservation[i];
+            ref var obs = ref BlockObservation[i];
             var blockpos = blockposvec[i].pos;
             var blockvec = blockposvec[i].vec;
             obs.Init();
@@ -166,7 +170,7 @@ public class GameManager : MonoBehaviour
     public Observation BoardObservation;
     public Observation[] BlockObservation;
 
-    
+
     private void RewardUpdate()
     {
         //ボード
@@ -183,7 +187,7 @@ public class GameManager : MonoBehaviour
         }
         AddRewardBoard(boardreward.actionchange * Abs(board.lastaction - boardlastaction));
         boardlastaction = board.lastaction;
-        AddRewardBoard(boardreward.time*activeblockcount);
+        AddRewardBoard(boardreward.time * activeblockcount);
         //ブロック
         for (int i = 0; i < blockcount; i++)
         {
@@ -223,10 +227,10 @@ public class GameManager : MonoBehaviour
                 drop = -1f,
                 clear = 0f,
                 time = -0.0008f,
-                actionchange =0f
+                actionchange = 0f
             };
         }
-        else if(session==1)
+        else if (session == 1)
         {
             boardreward = new BoardRewards
             {
@@ -238,7 +242,7 @@ public class GameManager : MonoBehaviour
                 actionchange = 0f
             };
         }
-        else if(session == 2)
+        else if (session == 2)
         {
             boardreward = new BoardRewards
             {
@@ -250,7 +254,7 @@ public class GameManager : MonoBehaviour
                 actionchange = -0.001f
             };
         }
-        
+
         blockreward = new BlockRewards
         {
             ballhit = -0.3f,
@@ -299,7 +303,7 @@ public class GameManager : MonoBehaviour
     {
         float prirew = (ActiveBlockCount() - 1f) / blockcount * blockreward.ballhit;
         float pubrew = 1f / blockcount * blockreward.ballhit;
-        AddRewardBlock(block,prirew);
+        AddRewardBlock(block, prirew);
         for (int i = 0; i < blockcount; i++)
         {
             if (blocks[i].IsActive)
@@ -313,6 +317,10 @@ public class GameManager : MonoBehaviour
     {
         AddRewardBoard(boardreward.drop);
         EndEpisode();
+    }
+    public void OnBlockStayBlockTrigger(Block block)
+    {
+        AddRewardBlock(block, blockreward.time * -0.5f);
     }
     public void AddRewardBlock(Block block, float reward)
     {

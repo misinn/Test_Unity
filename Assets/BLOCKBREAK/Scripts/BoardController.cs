@@ -6,15 +6,19 @@ public class BoardController : MonoBehaviour
 {
     Rigidbody rigid;
     public Vector3 Velocity => rigid.velocity;
-    [SerializeField] float speed = 0f;
+    [HideInInspector] public float maxAccelation = 0f;
+    private float Accel { get { return maxAccelation * Time.deltaTime; } }
+    
     void Start()
     {
         rigid = GetComponent<Rigidbody>();
     }
-    public void AddForce(Vector3 force)
+    public void AddForce(float force) //x = vt + Ft^2
     {
-        var speed = this.speed*Time.deltaTime;
-        rigid.AddForce(force*speed, ForceMode.VelocityChange);
+        var dt = Time.deltaTime;
+        var v = rigid.velocity.x;
+        var np = v * dt + dt + force * maxAccelation * dt;
+        rigid.velocity = new Vector3(np, 0, 0);
     }
 
 }
