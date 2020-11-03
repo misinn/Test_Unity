@@ -56,9 +56,9 @@ public class GameManager : MonoBehaviour
             {
                 if (AddPlayerBlock)
                 {
-                    blocks[1] = playerBlock;
-                    blocksColor[1] = blocks[1].gameObject.GetComponent<Renderer>();
-                    blocks[1].Initialize();
+                    blocks[i] = playerBlock;
+                    blocksColor[i] = playerBlock.gameObject.GetComponent<Renderer>();
+                    blocks[i].Initialize();
                     continue;
                 }
                 Destroy(playerBlock.gameObject);

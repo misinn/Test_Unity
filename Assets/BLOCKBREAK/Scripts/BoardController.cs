@@ -20,11 +20,11 @@ public class BoardController : MonoBehaviour
     
     public void Move(float force,float accel,float maxspeed)
     {
-        var dt = Time.time-lasttime;
-        lasttime = Time.time;
+        TimerUpdate();
+        var dt = deltatime*50f;
         var v = velocity;
         var a = force * accel;
-        velocity = v * (1 - friction * dt * 25f) + a * dt;
+        velocity = (v - a / friction) * Mathf.Pow(1 - friction, dt) + a / friction;
         if (Mathf.Abs(velocity) > maxspeed)
             velocity = velocity / Mathf.Abs(velocity) * maxspeed;
         rigid.velocity = new Vector3(velocity, 0, 0);
@@ -33,6 +33,7 @@ public class BoardController : MonoBehaviour
     float deltatime = 0.004f;
     private void TimerUpdate()
     {
+        if (Time.time == lasttime) return;
         deltatime = Time.time - lasttime;
         lasttime = Time.time;
         Debug.Log(deltatime + "board");

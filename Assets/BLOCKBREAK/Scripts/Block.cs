@@ -30,6 +30,7 @@ public class Block : Agent
         velocity = Zero;
         lasttime =  Time.time-0.004f;
         deltatime = 0.004f;
+        friction = friction < 1e-5f ? 1e-5f : friction;
     }
     private bool alreadyInitalized = false;
     public override void CollectObservations(VectorSensor sensor)
@@ -104,16 +105,14 @@ public class Block : Agent
     
     public void Move(Vector3 force,float accel,float maxspeed)
     {
-        var dt = deltatime;
-        Debug.Log(deltatime + "block");
+        var dt = deltatime * 50f;
         var v = velocity;
         var a = force * accel;
-        velocity = v * (1-friction*dt*25f) + a * dt;
+        velocity = (v - a / friction) * Mathf.Pow(1 - friction, dt) + a / friction;
         velocity.y = 0;
         var mag = velocity.magnitude;
         if (mag > maxspeed)
             velocity = velocity / mag * maxspeed;
-
         rigid.velocity += velocity;
     }
     float lasttime = 0f;

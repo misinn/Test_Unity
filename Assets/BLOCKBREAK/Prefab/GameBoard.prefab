@@ -244,7 +244,7 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
-  defaultAccel: 100
+  defaultAccel: 10
   defaultMaxSpeed: 11
   friction: 0.34
   accel: 0
@@ -1208,7 +1208,7 @@ PrefabInstance:
     - target: {fileID: 9026008408616317138, guid: 48e5f8bd83bba4b409f4200e80531b16,
         type: 3}
       propertyPath: defaultAccel
-      value: 100
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 9026008408616317138, guid: 48e5f8bd83bba4b409f4200e80531b16,
         type: 3}
@@ -1493,7 +1493,7 @@ PrefabInstance:
     - target: {fileID: 9026008408616317138, guid: 48e5f8bd83bba4b409f4200e80531b16,
         type: 3}
       propertyPath: defaultAccel
-      value: 100
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 9026008408616317138, guid: 48e5f8bd83bba4b409f4200e80531b16,
         type: 3}

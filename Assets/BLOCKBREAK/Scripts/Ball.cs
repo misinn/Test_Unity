@@ -44,7 +44,6 @@ public class Ball : MonoBehaviour
         }
         this.velocity.z -= 0.0002f;
         var velocity = this.velocity / GetxzMag(this.velocity) * speed * deltatime;
-        lasttime = Time.time;
         rigid.velocity = velocity;
     }
     private void OnCollisionEnter(Collision collision)
@@ -104,6 +103,5 @@ public class Ball : MonoBehaviour
     {
         deltatime = Time.time - lasttime;
         lasttime = Time.time;
-        Debug.Log(deltatime + "ball");
     }
 }
