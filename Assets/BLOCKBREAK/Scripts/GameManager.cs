@@ -5,26 +5,37 @@ using Unity.MLAgents.Sensors;
 using static UnityEngine.Mathf;
 public class GameManager : MonoBehaviour
 {
-    public Ball ball;
-    public Board board;
-    public Block block;
-    public int blockcount;
+    //ゲームループ関連
     public int MaxStep;
+    public int targetFrameRate = 60;
+    [HideInInspector]public float lasttime = 0f;
+    [HideInInspector]public float nowtime = 0f;
+    [HideInInspector]
+    public int session = 0;
+    //ボール
+    public Ball ball;
+    Vector3 defaltBallPos;
+    //ボード
+    public Board board;
+    Vector3 defaltBoardPos;
+    float boardlastaction;
+    //ブロック
+    [SerializeField]
+    Block block;
+    public int blockcount;
     public bool AddPlayerBlock;
-    public Block playerBlock;
-    private Block[] blocks;
-    private Renderer[] blocksColor;
     public Color[] Colors;
-    private Vector3 defaltBallPos;
-    private Vector3 defaltBoardPos;
-    private Vector3[] defaltBlocksPos = new Vector3[60];
-    private Color[] defaltBlocksColor = new Color[60];
-    private int session = 0;
+    public Block playerBlock;
+    Block[] blocks;
+    Renderer[] blocksColor;
+    Vector3[] defaltBlocksPos = new Vector3[60];
+    Color[] defaltBlocksColor = new Color[60];
+    
     private int[] blockslastaction;
-    private float boardlastaction;
+    
     public void Start()
     {
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = targetFrameRate;
         //ボール
         defaltBallPos = ball.transform.position;
         //ボード
@@ -73,6 +84,9 @@ public class GameManager : MonoBehaviour
     }
     public void Reset()
     {
+        //gameloop
+        nowtime = Time.time;
+        lasttime = nowtime - Time.deltaTime;
         //ball
         ball.transform.position = defaltBallPos;
         ball.velocity = new Vector3(0f, 0f, -1f) * ball.DefaultSpeed;
@@ -93,7 +107,6 @@ public class GameManager : MonoBehaviour
             blocksColor[i].material.color = defaltBlocksColor[nums[i]];
         }
         SetEnvParameter();
-
         for (int i = 0; i < blockcount; i++)
         {
             blocks[i].SetTrigger(session == 0);
@@ -103,9 +116,25 @@ public class GameManager : MonoBehaviour
     public void Update()
     {
         ManageGameLoop();
+        ObjParameterUpdate();
         ObservationUpdate();
         RewardUpdate();
         ActionUpdate();
+    }
+    private void ManageGameLoop()
+    {
+        int step = board.StepCount;
+        lasttime = nowtime;
+        nowtime = Time.time;
+        if (lasttime == nowtime) lasttime -= Time.deltaTime;
+        if (step <= MaxStep) return;
+        EndEpisode();
+    }
+    private void ObjParameterUpdate()
+    {
+        float rate = ball.speed / ball.DefaultSpeed;
+        board.accel = board.defaultAccel * rate;
+        board.maxSpeed = board.defaultMaxSpeed * rate;
     }
     private void ObservationUpdate()
     {
@@ -117,7 +146,6 @@ public class GameManager : MonoBehaviour
             var pos = ball.transform.localPosition;
             var vec = ball.velocity;
             ballpos = new Vector3((pos.x - wallR) / (wallL - wallR), .5f, (pos.z - wallD) / (wallU - wallD));
-            ballvec = vec / ballmaxvec;
         }
         //ボード
         var boardpos = board.LocalPos;
@@ -126,7 +154,6 @@ public class GameManager : MonoBehaviour
             var pos = board.LocalPos;
             var vec = board.Velocity;
             boardpos = new Vector3((pos.x - wallR) / (wallL - wallR), .5f, (pos.z - wallD) / (wallU - wallD));
-            boardvec = vec / boardmaxvec;
         }
         //ブロック
         var blockposvec = new (Vector3 pos, Vector3 vec)[blockcount];
@@ -135,7 +162,6 @@ public class GameManager : MonoBehaviour
             var pos = blocks[i].transform.localPosition;
             var vec = blocks[i].transform.localPosition;
             blockposvec[i].pos = new Vector3((pos.x - wallR) / (wallL - wallR), .5f, (pos.z - wallD) / (wallU - wallD));
-            blockposvec[i].vec = vec / blocksmaxvec;
         }
         System.Array.Sort(blockposvec, (a, b) => -a.pos.z.CompareTo(b.pos.z));
         //情報の記録・伝達
@@ -169,8 +195,6 @@ public class GameManager : MonoBehaviour
     }
     public Observation BoardObservation;
     public Observation[] BlockObservation;
-
-
     private void RewardUpdate()
     {
         //ボード
@@ -262,12 +286,6 @@ public class GameManager : MonoBehaviour
             actionchange = -0.0025f,
             move = 0.001f
         };
-    }
-    private void ManageGameLoop()
-    {
-        int step = board.StepCount;
-        if (step <= MaxStep) return;
-        EndEpisode();
     }
     public Vector2[] GetBlocksPos
     {
@@ -368,8 +386,4 @@ public class GameManager : MonoBehaviour
     const float wallL = 6.5f;
     const float wallD = -5.5f;
     const float wallU = 4.5f;
-
-    const float blocksmaxvec = 1.5f;
-    const float boardmaxvec = 9f;
-    const float ballmaxvec = 8f;
 }

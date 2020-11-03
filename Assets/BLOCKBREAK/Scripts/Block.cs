@@ -9,10 +9,14 @@ public class Block : Agent
     private GameManager gamemanager;
     private Rigidbody rigid;
     private Collider collid;
-    public float speed;
     public bool enablemove;
     public bool IsPlayer { get; private set; }
-    public Vector3 Velocity { get { return rigid.velocity; } }
+    public float defaultAccel = 5000f;
+    public float defaultMaxSpeed = 3f;
+    [Range(0,1)]public float friction = 0.34f;
+    public Vector3 Velocity { get { return velocity; } }
+    Vector3 velocity = Zero;
+    
     public Observation Observation;
     public override void Initialize()
     {
@@ -23,6 +27,9 @@ public class Block : Agent
         Observation = new Observation(8);
         alreadyInitalized = true;
         IsPlayer = this.gameObject.name == "PlayerBlockAgent";
+        velocity = Zero;
+        lasttime =  Time.time-0.004f;
+        deltatime = 0.004f;
     }
     private bool alreadyInitalized = false;
     public override void CollectObservations(VectorSensor sensor)
@@ -36,15 +43,16 @@ public class Block : Agent
     public int lastaction = 0;
     public override void OnActionReceived(float[] vectorAction)
     {
+        TimerUpdate();
         var action = vectorAction[0];
-        var speed = this.speed*Time.deltaTime;
-        var pos = Zero;
-        if (action == 1) pos = Right * speed;
-        else if (action == 2) pos = Left * speed;
-        else if (action == 3) pos = Up * speed;
-        else if (action == 4) pos = Down * speed;
+        var force = Zero;
+        if (action == 1) force = Right;
+        else if (action == 2) force = Left;
+        else if (action == 3) force = Up;
+        else if (action == 4) force = Down;
+        rigid.velocity = Zero;
+        Move(force, defaultAccel, defaultMaxSpeed);
         lastaction = (int)action;
-        rigid.AddForce(pos, ForceMode.VelocityChange);
     }
     public override void Heuristic(float[] actionsOut)
     {
@@ -86,17 +94,39 @@ public class Block : Agent
     {
         if (other.CompareTag("blocklimit"))
         {
-            rigid.AddForce(Up * speed * 20 * Time.deltaTime, ForceMode.VelocityChange);
+            Move(Up, defaultAccel * 10, defaultMaxSpeed *10);
         }
         else if (other.CompareTag("blocktrigger"))
         {
             gamemanager.OnBlockStayBlockTrigger(this);
         }
     }
+    
+    public void Move(Vector3 force,float accel,float maxspeed)
+    {
+        var dt = deltatime;
+        Debug.Log(deltatime + "block");
+        var v = velocity;
+        var a = force * accel;
+        velocity = v * (1-friction*dt*25f) + a * dt;
+        velocity.y = 0;
+        var mag = velocity.magnitude;
+        if (mag > maxspeed)
+            velocity = velocity / mag * maxspeed;
+
+        rigid.velocity += velocity;
+    }
+    float lasttime = 0f;
+    float deltatime = 0.004f;
+    private void TimerUpdate()
+    {
+        deltatime = Time.time - lasttime;
+        lasttime = Time.time;
+    }
     [HideInInspector]public int moveDir { get; set; }
-    Vector3 Zero = Vector3.zero;
-    Vector3 Right = Vector3.right;
-    Vector3 Left = Vector3.left;
-    Vector3 Up = Vector3.forward;
-    Vector3 Down = Vector3.back;
+    static Vector3 Zero = Vector3.zero;
+    static Vector3 Right = Vector3.right;
+    static Vector3 Left = Vector3.left;
+    static Vector3 Up = Vector3.forward;
+    static Vector3 Down = Vector3.back;
 }

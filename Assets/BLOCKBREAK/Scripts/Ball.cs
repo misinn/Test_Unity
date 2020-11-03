@@ -27,31 +27,39 @@ public class Ball : MonoBehaviour
         set { skip = value; }
     }
     private bool skip;
-
     private void Start()
     {
         gamemanager = GetComponentInParent<GameManager>();
         rigid = GetComponent<Rigidbody>();
         velocity = new Vector3(0, 0, -1f);
+        lasttime = Time.time-0.001f;
     }
+
     private void FixedUpdate()
     {
+        TimerUpdate();
         if (Skip)
         {
             return;
         }
-        this.velocity.z -= 0.0001f;
-        var velocity = this.velocity / GetxzMag(this.velocity) * speed * Time.fixedDeltaTime;
+        this.velocity.z -= 0.0002f;
+        var velocity = this.velocity / GetxzMag(this.velocity) * speed * deltatime;
+        lasttime = Time.time;
         rigid.velocity = velocity;
     }
     private void OnCollisionEnter(Collision collision)
     {
         var hitGameObj = collision.gameObject;
-        var normal = collision.contacts[0].normal;
-        var nvec = Vector3.Project(velocity, normal);
-        var pvec = velocity - nvec;
-        var bound = pvec - nvec;
-        velocity = bound;
+        var avevelocity = new Vector3();
+        foreach (var item in collision.contacts)
+        {
+            var normal = item.normal;
+            var nvec = Vector3.Project(velocity, normal);
+            var pvec = velocity - nvec;
+            var bound = pvec - nvec;
+            avevelocity += bound / collision.contacts.Length*0.95f;
+        }
+        velocity = avevelocity;
         speed += accelOnHit;
         velocity.y = 0;
         if (hitGameObj.CompareTag("block"))
@@ -85,14 +93,17 @@ public class Ball : MonoBehaviour
             gamemanager.OnBallHitVirtualBlock(other.GetComponent<Block>());
         }
     }
-    public void BoardHit()
-    {
-
-    }
-
     private float GetxzMag(Vector3 vec)
     {
         float x = vec.x, z = vec.z;
         return Sqrt(x * x + z * z);
+    }
+    float lasttime = 0f;
+    float deltatime = 0.004f;
+    private void TimerUpdate()
+    {
+        deltatime = Time.time - lasttime;
+        lasttime = Time.time;
+        Debug.Log(deltatime + "ball");
     }
 }

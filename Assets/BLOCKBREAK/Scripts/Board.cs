@@ -11,7 +11,10 @@ public class Board : Agent
     public Vector3 Velocity => boardController.Velocity;
     public Observation Observation;
     public float defaultAccel = 400f;
-    [HideInInspector] public float Accel;
+    public float defaultMaxSpeed = 9f;
+    [Range(0,1)] public float friction = 0f;
+    [HideInInspector] public float accel;
+    [HideInInspector] public float maxSpeed;
     public bool automove = false;
     public float actionRange = 2f;
     public float speedAffectRange = 0.5f;
@@ -22,14 +25,16 @@ public class Board : Agent
         gamemanager = GetComponentInParent<GameManager>();
         Observation = new Observation(7);
         session = (int)Academy.Instance.EnvironmentParameters.GetWithDefault("session", 2);
-        Accel = defaultAccel;
-        boardController.maxAccelation = Accel;
-
+        accel = defaultAccel;
+        maxSpeed = defaultMaxSpeed;
+        boardController.friction = friction;
     }
     public override void OnEpisodeBegin()
     {
         session = (int)Academy.Instance.EnvironmentParameters.GetWithDefault("session", 2);
-        Accel = defaultAccel;
+        accel = defaultAccel;
+        maxSpeed = defaultMaxSpeed;
+        boardController.Init();
         base.OnEpisodeBegin();
     }
     public override void CollectObservations(VectorSensor sensor)
@@ -52,13 +57,13 @@ public class Board : Agent
             var boardpos = boardController.gameObject.transform.localPosition.x;
             var dif = boardpos - ballpos - action * actionRange;
             forcex = -CalcForce(dif, speedAffectRange);
-            boardController.AddForce(forcex);
+            boardController.Move(forcex, accel, maxSpeed);
             lastaction = action;
             return;
         }
         //if not auto 使わない
         forcex = action;
-        boardController.AddForce(forcex);
+        boardController.Move(forcex, accel, maxSpeed);
     }
     public override void Heuristic(float[] actionsOut)
     {
