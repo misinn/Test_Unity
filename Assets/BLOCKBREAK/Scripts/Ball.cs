@@ -42,7 +42,7 @@ public class Ball : MonoBehaviour
         {
             return;
         }
-        this.velocity.z -= 0.0002f;
+        this.velocity.z -= 0.01f*deltatime;
         var velocity = this.velocity / GetxzMag(this.velocity) * speed * deltatime;
         rigid.velocity = velocity;
     }
