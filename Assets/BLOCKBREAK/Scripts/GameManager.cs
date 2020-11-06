@@ -1,41 +1,47 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Barracuda;
 using Unity.MLAgents.Sensors;
 using static UnityEngine.Mathf;
+
 public class GameManager : MonoBehaviour
 {
     //ゲームループ関連
     public int MaxStep;
     public int targetFrameRate = 60;
-    [HideInInspector]public float lasttime = 0f;
-    [HideInInspector]public float nowtime = 0f;
-    [HideInInspector]
-    public int session = 0;
+    [HideInInspector]public int session = 0;
+    BlockBreakManager BlockBreakManager;
+    bool IsML;
+    bool IsGameStart = false;
+    int activeblockcount = 0;
     //ボール
     public Ball ball;
     Vector3 defaltBallPos;
     //ボード
     public Board board;
+    public NNModel boardModel;
     Vector3 defaltBoardPos;
     float boardlastaction;
     //ブロック
     [SerializeField]
     Block block;
+    public NNModel blockModel;
     public int blockcount;
-    public bool AddPlayerBlock;
     public Color[] Colors;
     public Block playerBlock;
     Block[] blocks;
     Renderer[] blocksColor;
     Vector3[] defaltBlocksPos = new Vector3[60];
     Color[] defaltBlocksColor = new Color[60];
-    
-    private int[] blockslastaction;
+    int[] blockslastaction;
     
     public void Start()
     {
         Application.targetFrameRate = targetFrameRate;
+        BlockBreakManager = GetComponentInParent<BlockBreakManager>();
+        IsML = BlockBreakManager.IsML;
+        IsGameStart = false;
         //ボール
         defaltBallPos = ball.transform.position;
         //ボード
@@ -46,22 +52,28 @@ public class GameManager : MonoBehaviour
         blocks = new Block[blockcount];
         blocksColor = new Renderer[blockcount];
         BlockObservation = new Observation[blockcount];
-        blocks[0] = block;
-        blocksColor[0] = block.gameObject.GetComponent<Renderer>();
-        blocks[0].Initialize();
         blockslastaction = new int[blockcount];
-        for (int i = 1; i < blockcount; i++)
+        for (int i = 0; i < blockcount; i++)
         {
-            if (i == 1)
+            if (i == 0)
             {
-                if (AddPlayerBlock)
+                if (BlockBreakManager.GameMode == GameMode.block)
                 {
+                    playerBlock.Enable();
                     blocks[i] = playerBlock;
                     blocksColor[i] = playerBlock.gameObject.GetComponent<Renderer>();
                     blocks[i].Initialize();
-                    continue;
+                    block.Disable();
                 }
-                Destroy(playerBlock.gameObject);
+                else
+                {
+                    block.Enable();
+                    blocks[i] = block;
+                    blocksColor[i] = block.gameObject.GetComponent<Renderer>();
+                    blocks[i].Initialize();
+                    playerBlock.Disable();
+                }
+                continue;
             }
             var obj = Instantiate(block, transform);
             blocks[i] = obj.GetComponent<Block>();
@@ -80,41 +92,75 @@ public class GameManager : MonoBehaviour
         {
             BlockObservation[i] = blocks[i].Observation;
         }
-        Reset();
     }
-    public void Reset()
+    public void GameSetUp(GameMode gameMode) //ゲームを準備する。
     {
         //gameloop
-        nowtime = Time.time;
-        lasttime = nowtime - Time.deltaTime;
+        IsGameStart = false;
+        
         //ball
         ball.transform.position = defaltBallPos;
-        ball.velocity = new Vector3(0f, 0f, -1f) * ball.DefaultSpeed;
         ball.speed = ball.DefaultSpeed;
-        ball.Skip = true;
+        ball.velocity = Vector3.zero;
         if (session == 0) ball.velocity.x += Random.Range(-1.5f, 1.5f);
         //board
         board.Position = defaltBoardPos;
+        if (gameMode == GameMode.board)
+        {
+            board.IsPlayer = true;
+        }
+        else board.IsPlayer = false;
+        board.SetUp();
         //blocks
         for (int i = 0; i < blockcount; i++)
         {
+            if (i == 0)
+            {
+                if (gameMode == GameMode.block)
+                {
+                    playerBlock.Enable();
+                    blocks[i] = playerBlock;
+                    blocksColor[i] = playerBlock.gameObject.GetComponent<Renderer>();
+                    blocks[i].Initialize();
+                    block.Disable();
+                }
+                else
+                {
+                    block.Enable();
+                    blocks[i] = block;
+                    blocksColor[i] = block.gameObject.GetComponent<Renderer>();
+                    blocks[i].Initialize();
+                    blocks[i].UseModel = false;
+                    playerBlock.Disable();
+                }
+                continue;
+            }
             blocks[i].Enable();
         }
         int[] nums = Enumerable.Range(0, 60).OrderBy(l => System.Guid.NewGuid()).ToArray();
         for (int i = 0; i < blockcount; i++)
         {
+            blocks[i].Stop();
             blocks[i].transform.localPosition = defaltBlocksPos[nums[i]];
             blocksColor[i].material.color = defaltBlocksColor[nums[i]];
         }
         SetEnvParameter();
         for (int i = 0; i < blockcount; i++)
         {
-            blocks[i].SetTrigger(session == 0);
+            blocks[i].SetIsTrigger(session == 0);
         }
+    }
 
+    public void GameStart() //準備したゲームを開始するトリガー
+    {
+        IsGameStart = true;
+        ball.velocity = new Vector3(0f, 0f, -1f) * ball.DefaultSpeed;
+        ball.GameStart();
+        ball.Skip = true;
     }
     public void Update()
     {
+        if (!IsGameStart) return;
         ManageGameLoop();
         ObjParameterUpdate();
         ObservationUpdate();
@@ -124,15 +170,17 @@ public class GameManager : MonoBehaviour
     private void ManageGameLoop()
     {
         int step = board.StepCount;
-        lasttime = nowtime;
-        nowtime = Time.time;
-        if (lasttime == nowtime) lasttime -= Time.deltaTime;
-        if (step <= MaxStep) return;
-        EndEpisode();
+        activeblockcount = ActiveBlockCount();
+        if ((BlockBreakManager.GameMode==GameMode.ML && step > MaxStep) || activeblockcount == 0)
+        {
+            AddRewardBoard(boardreward.clear);
+            GameEnd();
+        }
     }
+    private float rate = 0f;
     private void ObjParameterUpdate()
     {
-        float rate = ball.speed / ball.DefaultSpeed;
+        rate = ball.speed / ball.DefaultSpeed;
         board.accel = board.defaultAccel * rate;
         board.maxSpeed = board.defaultMaxSpeed * rate;
     }
@@ -167,6 +215,7 @@ public class GameManager : MonoBehaviour
         //情報の記録・伝達
         //ボード
         BoardObservation.Init();
+        BoardObservation.AddObservation(rate);
         BoardObservation.AddObservation(ballpos.x);
         BoardObservation.AddObservation(ballpos.z);
         BoardObservation.AddObservation(ballvec.x);
@@ -182,6 +231,7 @@ public class GameManager : MonoBehaviour
             var blockpos = blockposvec[i].pos;
             var blockvec = blockposvec[i].vec;
             obs.Init();
+            obs.AddObservation(rate);
             obs.AddObservation(ballpos.x);
             obs.AddObservation(ballpos.z);
             obs.AddObservation(ballvec.x);
@@ -203,20 +253,14 @@ public class GameManager : MonoBehaviour
             AddRewardBoard(boardreward.time);
             return;
         }
-        var activeblockcount = ActiveBlockCount();
-        if (activeblockcount == 0)
-        {
-            AddRewardBoard(boardreward.clear);
-            EndEpisode();
-        }
         AddRewardBoard(boardreward.actionchange * Abs(board.lastaction - boardlastaction));
+        AddRewardBoard(boardreward.time * Log(activeblockcount + 1, 2));
         boardlastaction = board.lastaction;
-        AddRewardBoard(boardreward.time * activeblockcount);
         //ブロック
         for (int i = 0; i < blockcount; i++)
         {
             if (!blocks[i].IsActive) continue;
-            if (blocks[i].Velocity.magnitude > 1f) AddRewardBlock(blocks[i], blockreward.move);
+            if (blocks[i].Velocity.magnitude > blocks[i].defaultMaxSpeed * 0.8f) { AddRewardBlock(blocks[i], blockreward.move); }
             if (blocks[i].lastaction != 0)
             {
                 if (blocks[i].lastaction != blockslastaction[i])
@@ -230,12 +274,28 @@ public class GameManager : MonoBehaviour
     }
     private void ActionUpdate()
     {
+        //ボード
         board.RequestDecision();
+        //ブロック
         for (int i = 0; i < blockcount; i++)
         {
             if (!blocks[i].IsActive) continue;
             blocks[i].RequestDecision();
         }
+        //ボール
+
+    }
+    private void GameEnd()
+    {
+        if (IsML)
+        {
+            EndEpisode();
+            GameSetUp(GameMode.ML);
+            GameStart();
+            return;
+        }
+        ball.GameEnd();
+        BlockBreakManager.GameEnd();
     }
     public BoardRewards boardreward;
     public BlockRewards blockreward;
@@ -284,7 +344,7 @@ public class GameManager : MonoBehaviour
             ballhit = -0.3f,
             time = 0.0005f,
             actionchange = -0.0025f,
-            move = 0.001f
+            move = 0.0015f
         };
     }
     public Vector2[] GetBlocksPos
@@ -334,11 +394,16 @@ public class GameManager : MonoBehaviour
     public void OnBallDroped()
     {
         AddRewardBoard(boardreward.drop);
-        EndEpisode();
+        //TODO 自分がブロックの時とボードの時の場合分け
+        GameEnd();
     }
     public void OnBlockStayBlockTrigger(Block block)
     {
         AddRewardBlock(block, blockreward.time * -0.5f);
+    }
+    public void OnBlockHitBlockLimit(Block block)
+    {
+        AddRewardBlock(block, blockreward.move * -2f);
     }
     public void AddRewardBlock(Block block, float reward)
     {
@@ -355,7 +420,6 @@ public class GameManager : MonoBehaviour
         {
             blocks[i].EndEpisode();
         }
-        Reset();
     }
     public struct BoardRewards
     {

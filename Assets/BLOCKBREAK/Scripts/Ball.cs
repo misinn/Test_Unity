@@ -12,7 +12,8 @@ public class Ball : MonoBehaviour
     public float DefaultSpeed { get => defaltspeed; private set { defaltspeed = value; } }
     [HideInInspector] public float speed;
     public float accelOnHit;
-    [HideInInspector] public Vector3 velocity;
+     public Vector3 velocity;
+    private bool ArrowUpdate;
     public bool Skip
     {
         get
@@ -34,31 +35,35 @@ public class Ball : MonoBehaviour
         velocity = new Vector3(0, 0, -1f);
         lasttime = Time.time-0.001f;
     }
-
+    public void GameStart()
+    {
+        ArrowUpdate = true;
+    }
     private void FixedUpdate()
     {
         TimerUpdate();
-        if (Skip)
+        if (Skip || !ArrowUpdate)
         {
             return;
         }
         this.velocity.z -= 0.01f*deltatime;
-        var velocity = this.velocity / GetxzMag(this.velocity) * speed * deltatime;
+        var velocity = this.velocity / GetxzMag(this.velocity) * speed;
         rigid.velocity = velocity;
+    }
+    public void GameEnd()
+    {
+        ArrowUpdate = false;
+        rigid.velocity = new Vector3();
     }
     private void OnCollisionEnter(Collision collision)
     {
         var hitGameObj = collision.gameObject;
-        var avevelocity = new Vector3();
-        foreach (var item in collision.contacts)
-        {
-            var normal = item.normal;
-            var nvec = Vector3.Project(velocity, normal);
-            var pvec = velocity - nvec;
-            var bound = pvec - nvec;
-            avevelocity += bound / collision.contacts.Length*0.95f;
-        }
-        velocity = avevelocity;
+        var hitcount = collision.contacts.Length;
+        var normal = collision.contacts[0].normal;
+        var nvec = Vector3.Project(velocity, normal);
+        var pvec = velocity - nvec;
+        var bound = pvec - nvec;
+        velocity = bound;
         speed += accelOnHit;
         velocity.y = 0;
         if (hitGameObj.CompareTag("block"))
@@ -78,7 +83,7 @@ public class Ball : MonoBehaviour
             gamemanager.OnBallHitBoard();
         }
     }
-
+    
     public float rotateDegreesOnBoard;
     //Bottom
     private void OnTriggerEnter(Collider other)
@@ -87,7 +92,7 @@ public class Ball : MonoBehaviour
         {
             gamemanager.OnBallDroped();
         }
-        else if (other.gameObject.CompareTag("block"))
+        else if (other.gameObject.CompareTag("block")) //機械学習の遺産
         {
             gamemanager.OnBallHitVirtualBlock(other.GetComponent<Block>());
         }
@@ -95,7 +100,9 @@ public class Ball : MonoBehaviour
     private float GetxzMag(Vector3 vec)
     {
         float x = vec.x, z = vec.z;
-        return Sqrt(x * x + z * z);
+        float ans = x * x + z * z;
+        if (ans == 0) ans = 0.0001f;
+        return Sqrt(ans);
     }
     float lasttime = 0f;
     float deltatime = 0.004f;

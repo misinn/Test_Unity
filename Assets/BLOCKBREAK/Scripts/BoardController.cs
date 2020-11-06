@@ -15,6 +15,7 @@ public class BoardController : MonoBehaviour
     public void Init()
     {
         velocity = 0f;
+        rigid.velocity = new Vector3();
         lasttime = Time.time;
     }
     
@@ -36,6 +37,5 @@ public class BoardController : MonoBehaviour
         if (Time.time == lasttime) return;
         deltatime = Time.time - lasttime;
         lasttime = Time.time;
-        Debug.Log(deltatime + "board");
     }
 }

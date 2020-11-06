@@ -1,13 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Barracuda;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
-
+using Unity.MLAgents.Policies;
+[RequireComponent(typeof(Rigidbody))]
 public class Board : Agent
 {
-    private GameManager gamemanager;
-    private BoardController boardController;
+    GameManager gamemanager;
+    BoardController boardController;
+    BehaviorParameters BehaviorParameters;
     public Vector3 Velocity => boardController.Velocity;
     public Observation Observation;
     public float defaultAccel = 400f;
@@ -15,26 +18,37 @@ public class Board : Agent
     [Range(0,1)] public float friction = 0f;
     [HideInInspector] public float accel;
     [HideInInspector] public float maxSpeed;
-    public bool automove = false;
     public float actionRange = 2f;
     public float speedAffectRange = 0.5f;
+    public bool IsPlayer { get; set; }
     [HideInInspector] public int session = 0;
     public override void Initialize()
     {
         boardController = GetComponentInChildren<BoardController>();
         gamemanager = GetComponentInParent<GameManager>();
-        Observation = new Observation(7);
+        BehaviorParameters = GetComponent<BehaviorParameters>();
+        Observation = new Observation(8);
         session = (int)Academy.Instance.EnvironmentParameters.GetWithDefault("session", 2);
         accel = defaultAccel;
         maxSpeed = defaultMaxSpeed;
         boardController.friction = friction;
     }
-    public override void OnEpisodeBegin()
+    public void SetUp()
     {
-        session = (int)Academy.Instance.EnvironmentParameters.GetWithDefault("session", 2);
         accel = defaultAccel;
         maxSpeed = defaultMaxSpeed;
         boardController.Init();
+        if (IsPlayer)
+        {
+            BehaviorParameters.BehaviorType = BehaviorType.HeuristicOnly;
+        }
+        else
+        {
+            BehaviorParameters.BehaviorType = BehaviorType.InferenceOnly;
+        }
+    }
+    public override void OnEpisodeBegin()
+    {
         base.OnEpisodeBegin();
     }
     public override void CollectObservations(VectorSensor sensor)
@@ -43,7 +57,6 @@ public class Board : Agent
         for (int i = 0; i < obs.Length; i++)
         {
             sensor.AddObservation(obs[i]);
-
         }
     }
     public float lastaction = 0;
@@ -51,7 +64,7 @@ public class Board : Agent
     {
         var action = vectorAction[0];
         var forcex = 0f;
-        if (automove)
+        if (!IsPlayer)
         {
             var ballpos = gamemanager.ball.gameObject.transform.localPosition.x;
             var boardpos = boardController.gameObject.transform.localPosition.x;
@@ -61,15 +74,18 @@ public class Board : Agent
             lastaction = action;
             return;
         }
-        //if not auto 使わない
         forcex = action;
         boardController.Move(forcex, accel, maxSpeed);
+        lastaction = 0f;
     }
     public override void Heuristic(float[] actionsOut)
     {
         var action = 0;
-        if (Input.GetKey(KeyCode.RightArrow)) action = 1;
-        else if (Input.GetKey(KeyCode.LeftArrow)) action = -1;
+        if (IsPlayer)
+        {
+            if (Input.GetKey(KeyCode.RightArrow)) action = 1;
+            else if (Input.GetKey(KeyCode.LeftArrow)) action = -1;
+        }
         actionsOut[0] = action;
     }
 

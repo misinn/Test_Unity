@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
-
+using Unity.MLAgents.Policies;
+[RequireComponent(typeof(Rigidbody))]
 public class Block : Agent
 {
-    private GameManager gamemanager;
-    private Rigidbody rigid;
-    private Collider collid;
-    public bool enablemove;
-    public bool IsPlayer { get; private set; }
+    GameManager gamemanager;
+    Rigidbody rigid;
+    Collider collid;
+    BehaviorParameters BehaviorParameters;
+    bool IsPlayer { get; set; }
+    public bool UseModel { get; set; }
     public float defaultAccel = 5000f;
     public float defaultMaxSpeed = 3f;
     [Range(0,1)]public float friction = 0.34f;
     public Vector3 Velocity { get { return velocity; } }
     Vector3 velocity = Zero;
-    
+    bool alreadyInitalized = false;
     public Observation Observation;
     public override void Initialize()
     {
@@ -24,15 +26,15 @@ public class Block : Agent
         gamemanager = GetComponentInParent<GameManager>();
         rigid = GetComponent<Rigidbody>();
         collid = GetComponent<Collider>();
-        Observation = new Observation(8);
+        BehaviorParameters = GetComponent<BehaviorParameters>();
+        Observation = new Observation(9);
+        IsPlayer = this.gameObject.name == "BlockPlayer";
         alreadyInitalized = true;
-        IsPlayer = this.gameObject.name == "PlayerBlockAgent";
         velocity = Zero;
         lasttime =  Time.time-0.004f;
         deltatime = 0.004f;
         friction = friction < 1e-5f ? 1e-5f : friction;
     }
-    private bool alreadyInitalized = false;
     public override void CollectObservations(VectorSensor sensor)
     {
         float[] obs = Observation;
@@ -44,6 +46,7 @@ public class Block : Agent
     public int lastaction = 0;
     public override void OnActionReceived(float[] vectorAction)
     {
+        
         TimerUpdate();
         var action = vectorAction[0];
         var force = Zero;
@@ -52,13 +55,18 @@ public class Block : Agent
         else if (action == 3) force = Up;
         else if (action == 4) force = Down;
         rigid.velocity = Zero;
+        if (!IsPlayer && !UseModel)
+        {
+            lastaction = 0;
+            return;
+        }
         Move(force, defaultAccel, defaultMaxSpeed);
         lastaction = (int)action;
     }
     public override void Heuristic(float[] actionsOut)
     {
         var action = 0;
-        if (enablemove)
+        if (IsPlayer)
         {
             if (Input.GetKey(KeyCode.RightArrow)) action = 1;
             if (Input.GetKey(KeyCode.LeftArrow)) action = 2;
@@ -75,7 +83,7 @@ public class Block : Agent
     {
         this.gameObject.SetActive(false);
     }
-    public void SetTrigger(bool b)
+    public void SetIsTrigger(bool b)
     {
         collid.isTrigger = b;
     }
@@ -102,7 +110,6 @@ public class Block : Agent
             gamemanager.OnBlockStayBlockTrigger(this);
         }
     }
-    
     public void Move(Vector3 force,float accel,float maxspeed)
     {
         var dt = deltatime * 50f;
@@ -115,6 +122,17 @@ public class Block : Agent
             velocity = velocity / mag * maxspeed;
         rigid.velocity += velocity;
     }
+    public void Stop()
+    {
+        velocity = Zero;
+        rigid.velocity = Zero;
+    }
+    /*
+    public void SetBehaviorType(BehaviorType type)
+    {
+        this.BehaviorParameters.BehaviorType = type;
+    }
+    */
     float lasttime = 0f;
     float deltatime = 0.004f;
     private void TimerUpdate()
