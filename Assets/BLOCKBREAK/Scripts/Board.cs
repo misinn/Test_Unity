@@ -20,8 +20,8 @@ public class Board : Agent
     [HideInInspector] public float maxSpeed;
     public float actionRange = 2f;
     public float speedAffectRange = 0.5f;
-    public bool IsPlayer { get; set; }
-    [HideInInspector] public int session = 0;
+    public Operator _operator { get; set; }
+    [HideInInspector] public int session = 2;
     public override void Initialize()
     {
         boardController = GetComponentInChildren<BoardController>();
@@ -33,18 +33,24 @@ public class Board : Agent
         maxSpeed = defaultMaxSpeed;
         boardController.friction = friction;
     }
-    public void SetUp()
+    public void SetUp(Vector3 pos, Operator _operator)
     {
         accel = defaultAccel;
         maxSpeed = defaultMaxSpeed;
+        Position = pos;
+        this._operator = _operator;
         boardController.Init();
-        if (IsPlayer)
+        switch (_operator)
         {
-            BehaviorParameters.BehaviorType = BehaviorType.HeuristicOnly;
-        }
-        else
-        {
-            BehaviorParameters.BehaviorType = BehaviorType.InferenceOnly;
+            case Operator.Player:
+                BehaviorParameters.BehaviorType = BehaviorType.HeuristicOnly;
+                break;
+            case Operator.ML:
+                BehaviorParameters.BehaviorType = BehaviorType.Default;
+                break;
+            default:
+                BehaviorParameters.BehaviorType = BehaviorType.InferenceOnly;
+                break;
         }
     }
     public override void OnEpisodeBegin()
@@ -64,7 +70,7 @@ public class Board : Agent
     {
         var action = vectorAction[0];
         var forcex = 0f;
-        if (!IsPlayer)
+        if (_operator != Operator.Player)
         {
             var ballpos = gamemanager.ball.gameObject.transform.localPosition.x;
             var boardpos = boardController.gameObject.transform.localPosition.x;
@@ -81,7 +87,7 @@ public class Board : Agent
     public override void Heuristic(float[] actionsOut)
     {
         var action = 0;
-        if (IsPlayer)
+        if (_operator == Operator.Player)
         {
             if (Input.GetKey(KeyCode.RightArrow)) action = 1;
             else if (Input.GetKey(KeyCode.LeftArrow)) action = -1;
@@ -124,6 +130,12 @@ public class Board : Agent
             dif /= maxRange;
         }
         return dif;
+    }
+    public enum Operator
+    {
+        Player,
+        AI,
+        ML
     }
     readonly Vector3 Zero = Vector3.zero;
     readonly Vector3 Right = Vector3.right;

@@ -10,7 +10,6 @@ public class GameManager : MonoBehaviour
     //ゲームループ関連
     public int MaxStep;
     public int targetFrameRate = 60;
-    [HideInInspector]public int session = 0;
     BlockBreakManager BlockBreakManager;
     bool IsML;
     bool IsGameStart = false;
@@ -29,9 +28,7 @@ public class GameManager : MonoBehaviour
     public NNModel blockModel;
     public int blockcount;
     public Color[] Colors;
-    public Block playerBlock;
     Block[] blocks;
-    Renderer[] blocksColor;
     Vector3[] defaltBlocksPos = new Vector3[60];
     Color[] defaltBlocksColor = new Color[60];
     int[] blockslastaction;
@@ -43,43 +40,23 @@ public class GameManager : MonoBehaviour
         IsML = BlockBreakManager.IsML;
         IsGameStart = false;
         //ボール
-        defaltBallPos = ball.transform.position;
+        defaltBallPos = ball.transform.localPosition;
         //ボード
+        block.gameObject.SetActive(false);
         board.Initialize();
         defaltBoardPos = board.Position;
         BoardObservation = board.Observation;
         //ブロック関連
         blocks = new Block[blockcount];
-        blocksColor = new Renderer[blockcount];
         BlockObservation = new Observation[blockcount];
         blockslastaction = new int[blockcount];
         for (int i = 0; i < blockcount; i++)
         {
-            if (i == 0)
-            {
-                if (BlockBreakManager.GameMode == GameMode.block)
-                {
-                    playerBlock.Enable();
-                    blocks[i] = playerBlock;
-                    blocksColor[i] = playerBlock.gameObject.GetComponent<Renderer>();
-                    blocks[i].Initialize();
-                    block.Disable();
-                }
-                else
-                {
-                    block.Enable();
-                    blocks[i] = block;
-                    blocksColor[i] = block.gameObject.GetComponent<Renderer>();
-                    blocks[i].Initialize();
-                    playerBlock.Disable();
-                }
-                continue;
-            }
-            var obj = Instantiate(block, transform);
+            var obj = Instantiate(block, this.transform);
             blocks[i] = obj.GetComponent<Block>();
             obj.GetComponent<RayPerceptionSensorComponent3D>().SensorName = ("BlockSensor" + i).ToString();
-            blocksColor[i] = obj.GetComponent<Renderer>();
             blocks[i].Initialize();
+            BlockObservation[i] = blocks[i].Observation;
         }
         for (int i = 0; i < 60; i++)
         {
@@ -88,69 +65,47 @@ public class GameManager : MonoBehaviour
             defaltBlocksPos[i] = new Vector3(-5.5f + xc, 0.25f, 1.5f + zc * 0.5f);
             defaltBlocksColor[i] = Colors[zc];
         }
-        for (int i = 0; i < blockcount; i++)
-        {
-            BlockObservation[i] = blocks[i].Observation;
-        }
     }
     public void GameSetUp(GameMode gameMode) //ゲームを準備する。
     {
         //gameloop
         IsGameStart = false;
-        
         //ball
-        ball.transform.position = defaltBallPos;
-        ball.speed = ball.DefaultSpeed;
-        ball.velocity = Vector3.zero;
-        if (session == 0) ball.velocity.x += Random.Range(-1.5f, 1.5f);
+        ball.SetUp(defaltBallPos);
         //board
-        board.Position = defaltBoardPos;
-        if (gameMode == GameMode.board)
+        if (gameMode == GameMode.ML)
         {
-            board.IsPlayer = true;
+            board.SetUp(defaltBoardPos, Board.Operator.ML);
         }
-        else board.IsPlayer = false;
-        board.SetUp();
+        else if (gameMode == GameMode.board)
+        {
+            board.SetUp(defaltBoardPos, Board.Operator.Player);
+        }
+        else if(gameMode == GameMode.block)
+        {
+            board.SetUp(defaltBoardPos, Board.Operator.AI);
+        }
+        
         //blocks
-        for (int i = 0; i < blockcount; i++)
-        {
-            if (i == 0)
-            {
-                if (gameMode == GameMode.block)
-                {
-                    playerBlock.Enable();
-                    blocks[i] = playerBlock;
-                    blocksColor[i] = playerBlock.gameObject.GetComponent<Renderer>();
-                    blocks[i].Initialize();
-                    block.Disable();
-                }
-                else
-                {
-                    block.Enable();
-                    blocks[i] = block;
-                    blocksColor[i] = block.gameObject.GetComponent<Renderer>();
-                    blocks[i].Initialize();
-                    blocks[i].UseModel = false;
-                    playerBlock.Disable();
-                }
-                continue;
-            }
-            blocks[i].Enable();
-        }
         int[] nums = Enumerable.Range(0, 60).OrderBy(l => System.Guid.NewGuid()).ToArray();
         for (int i = 0; i < blockcount; i++)
         {
-            blocks[i].Stop();
-            blocks[i].transform.localPosition = defaltBlocksPos[nums[i]];
-            blocksColor[i].material.color = defaltBlocksColor[nums[i]];
+            blocks[i].Enable();
+            if(gameMode == GameMode.ML)
+            {
+                blocks[i].SetUp(defaltBlocksColor[nums[i]], defaltBlocksPos[nums[i]], Block.Operator.ML, Block.Type.Normal);
+            }
+            else if(i==0&&gameMode == GameMode.block)
+            {
+                blocks[i].SetUp(defaltBlocksColor[nums[i]], defaltBlocksPos[nums[i]], Block.Operator.Player, Block.Type.Normal);
+            }
+            else
+            {
+                blocks[i].SetUp(defaltBlocksColor[nums[i]], defaltBlocksPos[nums[i]], Block.Operator.None, Block.Type.Normal);
+            }
         }
         SetEnvParameter();
-        for (int i = 0; i < blockcount; i++)
-        {
-            blocks[i].SetIsTrigger(session == 0);
-        }
     }
-
     public void GameStart() //準備したゲームを開始するトリガー
     {
         IsGameStart = true;
@@ -248,11 +203,6 @@ public class GameManager : MonoBehaviour
     private void RewardUpdate()
     {
         //ボード
-        if (session == 0)
-        {
-            AddRewardBoard(boardreward.time);
-            return;
-        }
         AddRewardBoard(boardreward.actionchange * Abs(board.lastaction - boardlastaction));
         AddRewardBoard(boardreward.time * Log(activeblockcount + 1, 2));
         boardlastaction = board.lastaction;
@@ -301,44 +251,15 @@ public class GameManager : MonoBehaviour
     public BlockRewards blockreward;
     private void SetEnvParameter()
     {
-        session = board.session;
-        if (session == 0)
+        boardreward = new BoardRewards
         {
-            boardreward = new BoardRewards
-            {
-                ballhit = 0.2f,
-                blockhit = 0f,
-                drop = -1f,
-                clear = 0f,
-                time = -0.0008f,
-                actionchange = 0f
-            };
-        }
-        else if (session == 1)
-        {
-            boardreward = new BoardRewards
-            {
-                ballhit = 0.15f,
-                blockhit = 0.01f,
-                drop = -1f,
-                clear = 0.25f,
-                time = -0.001f,
-                actionchange = 0f
-            };
-        }
-        else if (session == 2)
-        {
-            boardreward = new BoardRewards
-            {
-                ballhit = 0.01f,
-                blockhit = 0.15f,
-                drop = -1f,
-                clear = 0.5f,
-                time = -0.0002f,
-                actionchange = -0.001f
-            };
-        }
-
+            ballhit = 0.01f,
+            blockhit = 0.15f,
+            drop = -1f,
+            clear = 0.5f,
+            time = -0.0002f,
+            actionchange = -0.001f
+        };
         blockreward = new BlockRewards
         {
             ballhit = -0.3f,

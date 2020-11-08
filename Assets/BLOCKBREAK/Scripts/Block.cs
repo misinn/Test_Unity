@@ -7,11 +7,13 @@ using Unity.MLAgents.Policies;
 [RequireComponent(typeof(Rigidbody))]
 public class Block : Agent
 {
-    GameManager gamemanager;
-    Rigidbody rigid;
-    Collider collid;
+    GameManager GameManager;
+    Rigidbody Rigidbody;
+    Collider Collider;
     BehaviorParameters BehaviorParameters;
-    bool IsPlayer { get; set; }
+    Renderer Renderer;
+    Operator _operator { get; set; }
+    Type _type { get; set; }
     public bool UseModel { get; set; }
     public float defaultAccel = 5000f;
     public float defaultMaxSpeed = 3f;
@@ -23,17 +25,38 @@ public class Block : Agent
     public override void Initialize()
     {
         if (alreadyInitalized) return;
-        gamemanager = GetComponentInParent<GameManager>();
-        rigid = GetComponent<Rigidbody>();
-        collid = GetComponent<Collider>();
+        GameManager = GetComponentInParent<GameManager>();
+        Rigidbody = GetComponent<Rigidbody>();
+        Collider = GetComponent<Collider>();
         BehaviorParameters = GetComponent<BehaviorParameters>();
+        Renderer = GetComponent<Renderer>();
         Observation = new Observation(9);
-        IsPlayer = this.gameObject.name == "BlockPlayer";
         alreadyInitalized = true;
         velocity = Zero;
         lasttime =  Time.time-0.004f;
         deltatime = 0.004f;
         friction = friction < 1e-5f ? 1e-5f : friction;
+    }
+    public void SetUp(Color color,Vector3 pos,Operator _operator,Type _type)
+    {
+        this.Renderer.material.color = color;
+        transform.localPosition = pos;
+        this._operator = _operator;
+        this._type = _type;
+
+        switch (_operator)
+        {
+            case Operator.Player:
+                BehaviorParameters.BehaviorType = BehaviorType.HeuristicOnly;
+                break;
+            case Operator.ML:
+                BehaviorParameters.BehaviorType = BehaviorType.Default;
+                break;
+            default:
+                BehaviorParameters.BehaviorType = BehaviorType.InferenceOnly;
+                break;
+        }
+        this.Stop();
     }
     public override void CollectObservations(VectorSensor sensor)
     {
@@ -54,8 +77,8 @@ public class Block : Agent
         else if (action == 2) force = Left;
         else if (action == 3) force = Up;
         else if (action == 4) force = Down;
-        rigid.velocity = Zero;
-        if (!IsPlayer && !UseModel)
+        Rigidbody.velocity = Zero;
+        if (_operator == Operator.None)
         {
             lastaction = 0;
             return;
@@ -66,7 +89,7 @@ public class Block : Agent
     public override void Heuristic(float[] actionsOut)
     {
         var action = 0;
-        if (IsPlayer)
+        if (_operator == Operator.Player)
         {
             if (Input.GetKey(KeyCode.RightArrow)) action = 1;
             if (Input.GetKey(KeyCode.LeftArrow)) action = 2;
@@ -85,7 +108,7 @@ public class Block : Agent
     }
     public void SetIsTrigger(bool b)
     {
-        collid.isTrigger = b;
+        Collider.isTrigger = b;
     }
     public bool IsActive
     {
@@ -95,7 +118,7 @@ public class Block : Agent
     {
         if (other.CompareTag("bottom"))
         {
-            gamemanager.OnBallHitVirtualBlock(this);
+            GameManager.OnBallHitVirtualBlock(this);
         }
 
     }
@@ -107,7 +130,7 @@ public class Block : Agent
         }
         else if (other.CompareTag("blocktrigger"))
         {
-            gamemanager.OnBlockStayBlockTrigger(this);
+            GameManager.OnBlockStayBlockTrigger(this);
         }
     }
     public void Move(Vector3 force,float accel,float maxspeed)
@@ -120,19 +143,14 @@ public class Block : Agent
         var mag = velocity.magnitude;
         if (mag > maxspeed)
             velocity = velocity / mag * maxspeed;
-        rigid.velocity += velocity;
+        Rigidbody.velocity += velocity;
     }
     public void Stop()
     {
         velocity = Zero;
-        rigid.velocity = Zero;
+        Rigidbody.velocity = Zero;
     }
-    /*
-    public void SetBehaviorType(BehaviorType type)
-    {
-        this.BehaviorParameters.BehaviorType = type;
-    }
-    */
+
     float lasttime = 0f;
     float deltatime = 0.004f;
     private void TimerUpdate()
@@ -141,9 +159,22 @@ public class Block : Agent
         lasttime = Time.time;
     }
     [HideInInspector]public int moveDir { get; set; }
+    public enum Operator
+    {
+        Player,
+        AI,
+        None,
+        ML
+    }
+    public enum Type //TODO
+    {
+        Normal,
+        Invincible
+    }
     static Vector3 Zero = Vector3.zero;
     static Vector3 Right = Vector3.right;
     static Vector3 Left = Vector3.left;
     static Vector3 Up = Vector3.forward;
     static Vector3 Down = Vector3.back;
 }
+

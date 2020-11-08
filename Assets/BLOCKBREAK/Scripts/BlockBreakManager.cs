@@ -6,8 +6,7 @@ public class BlockBreakManager : MonoBehaviour
     public bool IsML = false;
     public GameManager GameManager;
     public CanvasManager CanvasManager;
-    [SerializeField] GameMode gameMode;
-    public GameMode GameMode => gameMode;
+    public GameMode GameMode { get; private set; }
     private GameStatus GameStatus;
     void Start()
     {
@@ -15,9 +14,7 @@ public class BlockBreakManager : MonoBehaviour
         CanvasManager.ResultCanvas.Close();
         if (IsML)
         {
-            GameStatus = GameStatus.ML;
-            GameManager.GameSetUp(GameMode.ML);
-            GameManager.GameStart();
+            MLSetUpAndStart();
         }
         else
         {
@@ -28,7 +25,7 @@ public class BlockBreakManager : MonoBehaviour
     public void GameSetUp(GameMode gameMode)
     {
         GameStatus = GameStatus.standby;
-        this.gameMode = gameMode;
+        this.GameMode = gameMode;
         CanvasManager.TitleCanvas.Close();
         GameManager.GameSetUp(gameMode);
         StartCoroutine(GameReady());
@@ -70,7 +67,13 @@ public class BlockBreakManager : MonoBehaviour
         if (GameStatus != GameStatus.result) return;
         GameStatus = GameStatus.standby;
         CanvasManager.ResultCanvas.Close();
-        GameSetUp(this.gameMode);
+        GameSetUp(this.GameMode);
     }
-    
+    private void MLSetUpAndStart()
+    {
+        GameStatus = GameStatus.ML;
+        this.GameMode = GameMode.ML;
+        GameManager.GameSetUp(GameMode.ML);
+        GameManager.GameStart();
+    }
 }

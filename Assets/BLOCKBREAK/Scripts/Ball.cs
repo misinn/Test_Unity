@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using DG.Tweening;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static UnityEngine.Mathf;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -35,6 +38,12 @@ public class Ball : MonoBehaviour
         velocity = new Vector3(0, 0, -1f);
         lasttime = Time.time-0.001f;
     }
+    public void SetUp(Vector3 pos)
+    {
+        this.transform.localPosition = pos;
+        speed = DefaultSpeed;
+        velocity = new Vector3();
+    }
     public void GameStart()
     {
         ArrowUpdate = true;
@@ -46,9 +55,11 @@ public class Ball : MonoBehaviour
         {
             return;
         }
+        VelocityCheck();
         this.velocity.z -= 0.01f*deltatime;
-        var velocity = this.velocity / GetxzMag(this.velocity) * speed;
+        velocity = this.velocity / GetxzMag(this.velocity) * speed;
         rigid.velocity = velocity;
+        
     }
     public void GameEnd()
     {
@@ -58,17 +69,21 @@ public class Ball : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         var hitGameObj = collision.gameObject;
-        var hitcount = collision.contacts.Length;
         var normal = collision.contacts[0].normal;
+        if (!hitGameObj.CompareTag("board") &&!CanHit(normal, velocity)) return;
         var nvec = Vector3.Project(velocity, normal);
         var pvec = velocity - nvec;
         var bound = pvec - nvec;
         velocity = bound;
         speed += accelOnHit;
         velocity.y = 0;
+
+        //TODO 巨大球のときに揺らす
+        //Camera.main.transform.DOShakePosition(0.5f, 0.2f).OnComplete(() => Camera.main.transform.DOMove(new Vector3(0, 45, -0.3f), 0.1f));
         if (hitGameObj.CompareTag("block"))
         {
             gamemanager.OnBallHitBlock(hitGameObj.GetComponent<Block>());
+            
         }
         else if (hitGameObj.CompareTag("board"))
         {
@@ -103,6 +118,25 @@ public class Ball : MonoBehaviour
         float ans = x * x + z * z;
         if (ans == 0) ans = 0.0001f;
         return Sqrt(ans);
+    }
+    private bool CanHit(Vector3 vec1, Vector3 vec2)
+    {
+        var dot = Vector3.Dot(vec1, vec2);
+        return dot < 0;
+    }
+    int exceptionleng = 0;
+    private void VelocityCheck()
+    {
+        var rvec = rigid.velocity;
+        var vec = velocity;
+        //異常が起こっているとき、velocityを反転
+        if (GetxzMag(rvec) < GetxzMag(vec) / 10f) exceptionleng++;
+        else exceptionleng = 0;
+        if (exceptionleng > 5)
+        {
+            velocity = -velocity;
+            exceptionleng = 0;
+        }
     }
     float lasttime = 0f;
     float deltatime = 0.004f;
