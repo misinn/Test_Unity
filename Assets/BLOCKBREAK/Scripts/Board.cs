@@ -69,7 +69,7 @@ public class Board : Agent
     public override void OnActionReceived(float[] vectorAction)
     {
         var action = vectorAction[0];
-        var forcex = 0f;
+        float forcex;
         if (_operator != Operator.Player)
         {
             var ballpos = gamemanager.ball.gameObject.transform.localPosition.x;

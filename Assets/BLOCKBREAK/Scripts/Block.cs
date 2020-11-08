@@ -12,8 +12,8 @@ public class Block : Agent
     Collider Collider;
     BehaviorParameters BehaviorParameters;
     Renderer Renderer;
-    Operator _operator { get; set; }
-    Type _type { get; set; }
+    public Operator _operator { get; set; }
+    public Type _type { get; set; }
     public bool UseModel { get; set; }
     public float defaultAccel = 5000f;
     public float defaultMaxSpeed = 3f;
@@ -114,14 +114,16 @@ public class Block : Agent
     {
         get { return this.gameObject.activeSelf; }
     }
-    public void OnTriggerEnter(Collider other)
+    /*TODO
+    public void OnCollisionEnter(Collision collision)
     {
-        if (other.CompareTag("bottom"))
+        var hitgameobj = collision.gameObject;
+        if (hitgameobj.CompareTag("ball"))
         {
-            GameManager.OnBallHitVirtualBlock(this);
+            GameManager.OnBallHitBlock(this);
         }
-
     }
+    */
     public void OnTriggerStay(Collider other)
     {
         if (other.CompareTag("blocklimit"))
@@ -131,6 +133,10 @@ public class Block : Agent
         else if (other.CompareTag("blocktrigger"))
         {
             GameManager.OnBlockStayBlockTrigger(this);
+        }
+        else if (other.CompareTag("bottom"))
+        {
+            GameManager.OnBallHitVirtualBlock(this);
         }
     }
     public void Move(Vector3 force,float accel,float maxspeed)

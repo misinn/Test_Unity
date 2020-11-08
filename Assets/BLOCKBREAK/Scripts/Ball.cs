@@ -116,8 +116,7 @@ public class Ball : MonoBehaviour
     {
         float x = vec.x, z = vec.z;
         float ans = x * x + z * z;
-        if (ans == 0) ans = 0.0001f;
-        return Sqrt(ans);
+        return ans > 0 ? Sqrt(ans) : 0.001f;
     }
     private bool CanHit(Vector3 vec1, Vector3 vec2)
     {

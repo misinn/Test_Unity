@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using UnityEngine;
 using Unity.Barracuda;
@@ -32,7 +32,7 @@ public class GameManager : MonoBehaviour
     Vector3[] defaltBlocksPos = new Vector3[60];
     Color[] defaltBlocksColor = new Color[60];
     int[] blockslastaction;
-    
+    bool IsPlayerExist { get { return blocks.Any(_=> (_._operator == Block.Operator.Player && _.IsActive)); } }
     public void Start()
     {
         Application.targetFrameRate = targetFrameRate;
@@ -125,11 +125,24 @@ public class GameManager : MonoBehaviour
     private void ManageGameLoop()
     {
         int step = board.StepCount;
-        activeblockcount = ActiveBlockCount();
-        if ((BlockBreakManager.GameMode==GameMode.ML && step > MaxStep) || activeblockcount == 0)
+        activeblockcount = blocks.Count(_ => _.IsActive);
+        bool isPlayerExist = IsPlayerExist;
+        if (BlockBreakManager.GameMode==GameMode.ML && (step > MaxStep || activeblockcount==0) )
         {
             AddRewardBoard(boardreward.clear);
             GameEnd();
+            return;
+        }
+        if(BlockBreakManager.GameMode == GameMode.board && activeblockcount == 0)
+        {
+            GameEnd();
+            return;
+        }
+        if (BlockBreakManager.GameMode == GameMode.block && !isPlayerExist)
+        {
+            //TODO ここに勝ち負け判定を入れる。
+            GameEnd();
+            return;
         }
     }
     private float rate = 0f;
@@ -300,7 +313,7 @@ public class GameManager : MonoBehaviour
     }
     public void OnBallHitVirtualBlock(Block block)
     {
-        float prirew = (ActiveBlockCount() - 1f) / blockcount * blockreward.ballhit;
+        float prirew = (activeblockcount - 1f) / blockcount * blockreward.ballhit;
         float pubrew = 1f / blockcount * blockreward.ballhit;
         AddRewardBlock(block, prirew);
         for (int i = 0; i < blockcount; i++)
@@ -358,15 +371,7 @@ public class GameManager : MonoBehaviour
         public float actionchange;
         public float move;
     }
-    public int ActiveBlockCount()
-    {
-        int ans = 0;
-        for (int i = 0; i < blockcount; i++)
-        {
-            if (blocks[i].IsActive) ans++;
-        }
-        return ans;
-    }
+
     const float wallR = -6.5f;
     const float wallL = 6.5f;
     const float wallD = -5.5f;
