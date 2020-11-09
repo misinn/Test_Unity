@@ -1592,10 +1592,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaltspeed: 8
-  speed: 0
   accelOnHit: 0.02
-  velocity: {x: 0, y: 0, z: 0}
   rotateDegreesOnBoard: 72
+  velocity: {x: 0, y: 0, z: 0}
 --- !u!114 &2043870097
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2723,10 +2722,6 @@ MonoBehaviour:
   targetFrameRate: 60
   ball: {fileID: 2956796656723609173}
   board: {fileID: 2956796656094274932}
-  boardModel: {fileID: 5022602860645237092, guid: 0b2dcfaa19cc3494dab685fa2864d617,
-    type: 3}
-  block: {fileID: 2956796657639056463}
-  blockModel: {fileID: 0}
   blockcount: 15
   Colors:
   - {r: 1, g: 0, b: 0, a: 0}
@@ -2876,6 +2871,10 @@ MonoBehaviour:
   defaultAccel: 1
   defaultMaxSpeed: 2.5
   friction: 0.34
+  UndamagedMat: {fileID: 2100000, guid: 2bf2adb89e5454303b6dd89ef31c83e6, type: 2}
+  damagedMat: {fileID: 2100000, guid: 8670f9872ba684186ab958165b0b7513, type: 2}
+  HardlydamagedMat: {fileID: 2100000, guid: 5f880672466924e2d872991f8e305454, type: 2}
+  Velocity: {x: 0, y: 0, z: 0}
   lastaction: 0
 --- !u!114 &2956796657639056460
 MonoBehaviour:

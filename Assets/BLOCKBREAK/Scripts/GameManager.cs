@@ -19,19 +19,16 @@ public class GameManager : MonoBehaviour
     Vector3 defaltBallPos;
     //ボード
     public Board board;
-    public NNModel boardModel;
     Vector3 defaltBoardPos;
     float boardlastaction;
     //ブロック
-    [SerializeField]
-    Block block;
-    public NNModel blockModel;
     public int blockcount;
     public Color[] Colors;
     Block[] blocks;
     Vector3[] defaltBlocksPos = new Vector3[60];
     Color[] defaltBlocksColor = new Color[60];
     int[] blockslastaction;
+    int maxBlockCount = 60;
     bool IsPlayerExist { get { return blocks.Any(_=> (_._operator == Block.Operator.Player && _.IsActive)); } }
     public void Start()
     {
@@ -39,18 +36,20 @@ public class GameManager : MonoBehaviour
         BlockBreakManager = GetComponentInParent<BlockBreakManager>();
         IsML = BlockBreakManager.IsML;
         IsGameStart = false;
+        maxBlockCount = IsML ? blockcount : 60;
         //ボール
         defaltBallPos = ball.transform.localPosition;
         //ボード
-        block.gameObject.SetActive(false);
         board.Initialize();
         defaltBoardPos = board.Position;
         BoardObservation = board.Observation;
         //ブロック関連
-        blocks = new Block[blockcount];
-        BlockObservation = new Observation[blockcount];
-        blockslastaction = new int[blockcount];
-        for (int i = 0; i < blockcount; i++)
+        var block = GetComponentInChildren<Block>();
+        block.gameObject.SetActive(false);
+        blocks = new Block[maxBlockCount];
+        BlockObservation = new Observation[maxBlockCount];
+        blockslastaction = new int[maxBlockCount];
+        for (int i = 0; i < maxBlockCount; i++)
         {
             var obj = Instantiate(block, this.transform);
             blocks[i] = obj.GetComponent<Block>();
@@ -109,7 +108,7 @@ public class GameManager : MonoBehaviour
     public void GameStart() //準備したゲームを開始するトリガー
     {
         IsGameStart = true;
-        ball.velocity = new Vector3(0f, 0f, -1f) * ball.DefaultSpeed;
+        ball.velocity = new Vector3(0f, 0f, -1f) * ball.defaltspeed;
         ball.GameStart();
         ball.Skip = true;
     }
@@ -148,7 +147,7 @@ public class GameManager : MonoBehaviour
     private float rate = 0f;
     private void ObjParameterUpdate()
     {
-        rate = ball.speed / ball.DefaultSpeed;
+        rate = ball.speed / ball.defaltspeed;
         board.accel = board.defaultAccel * rate;
         board.maxSpeed = board.defaultMaxSpeed * rate;
     }
@@ -288,9 +287,9 @@ public class GameManager : MonoBehaviour
             var ans = new Vector2[blockcount];
             for (int i = 0; i < blockcount; i++)
             {
-                if (block.IsActive)
+                if (blocks[i].IsActive)
                 {
-                    var pos = block.transform.localPosition;
+                    var pos = blocks[i].transform.localPosition;
                     ans[i] = new Vector2(pos.x, pos.z);
                 }
                 else

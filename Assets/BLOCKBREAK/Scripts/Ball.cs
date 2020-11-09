@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using static UnityEngine.Mathf;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -11,11 +10,11 @@ public class Ball : MonoBehaviour
 {
     private GameManager gamemanager;
     private Rigidbody rigid;
-    [SerializeField] private float defaltspeed;
-    public float DefaultSpeed { get => defaltspeed; private set { defaltspeed = value; } }
-    [HideInInspector] public float speed;
+    public float defaltspeed;
+    public float speed { get; private set; }
     public float accelOnHit;
-     public Vector3 velocity;
+    public float rotateDegreesOnBoard;
+    public Vector3 velocity;
     private bool ArrowUpdate;
     public bool Skip
     {
@@ -41,7 +40,7 @@ public class Ball : MonoBehaviour
     public void SetUp(Vector3 pos)
     {
         this.transform.localPosition = pos;
-        speed = DefaultSpeed;
+        speed = defaltspeed;
         velocity = new Vector3();
     }
     public void GameStart()
@@ -80,12 +79,7 @@ public class Ball : MonoBehaviour
 
         //TODO 巨大球のときに揺らす
         //Camera.main.transform.DOShakePosition(0.5f, 0.2f).OnComplete(() => Camera.main.transform.DOMove(new Vector3(0, 45, -0.3f), 0.1f));
-        if (hitGameObj.CompareTag("block"))
-        {
-            gamemanager.OnBallHitBlock(hitGameObj.GetComponent<Block>());
-            
-        }
-        else if (hitGameObj.CompareTag("board"))
+        if (hitGameObj.CompareTag("board"))
         {
             var boardtrans = hitGameObj.transform;
             var hitpoint = collision.contacts[0].point.x;
@@ -99,7 +93,7 @@ public class Ball : MonoBehaviour
         }
     }
     
-    public float rotateDegreesOnBoard;
+    
     //Bottom
     private void OnTriggerEnter(Collider other)
     {
@@ -131,10 +125,12 @@ public class Ball : MonoBehaviour
         //異常が起こっているとき、velocityを反転
         if (GetxzMag(rvec) < GetxzMag(vec) / 10f) exceptionleng++;
         else exceptionleng = 0;
-        if (exceptionleng > 5)
+        if (exceptionleng > 4)
         {
             velocity = -velocity;
+            velocity.z += speed / 3;
             exceptionleng = 0;
+            Debug.Log("Exception_Ball");
         }
     }
     float lasttime = 0f;

@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Barracuda;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Policies;
@@ -22,6 +21,9 @@ public class Board : Agent
     public float speedAffectRange = 0.5f;
     public Operator _operator { get; set; }
     [HideInInspector] public int session = 2;
+    /// <summary>
+    /// 初期化の一度のみ。
+    /// </summary>
     public override void Initialize()
     {
         boardController = GetComponentInChildren<BoardController>();
@@ -31,7 +33,7 @@ public class Board : Agent
         session = (int)Academy.Instance.EnvironmentParameters.GetWithDefault("session", 2);
         accel = defaultAccel;
         maxSpeed = defaultMaxSpeed;
-        boardController.friction = friction;
+        boardController.friction = friction < 1e-5f ? 1e-5f : friction;
     }
     public void SetUp(Vector3 pos, Operator _operator)
     {
@@ -137,7 +139,4 @@ public class Board : Agent
         AI,
         ML
     }
-    readonly Vector3 Zero = Vector3.zero;
-    readonly Vector3 Right = Vector3.right;
-    readonly Vector3 Left = Vector3.left;
 }

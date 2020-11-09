@@ -193,6 +193,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: BlockBreak
       objectReference: {fileID: 0}
+    - target: {fileID: 2956796657596200709, guid: 5db807d61ef424833a5d2d3b37dfda81,
+        type: 3}
+      propertyPath: blockcount
+      value: 40
+      objectReference: {fileID: 0}
     - target: {fileID: 7978153257274793904, guid: 5db807d61ef424833a5d2d3b37dfda81,
         type: 3}
       propertyPath: m_Text

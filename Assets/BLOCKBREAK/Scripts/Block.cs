@@ -14,36 +14,43 @@ public class Block : Agent
     Renderer Renderer;
     public Operator _operator { get; set; }
     public Type _type { get; set; }
-    public bool UseModel { get; set; }
     public float defaultAccel = 5000f;
     public float defaultMaxSpeed = 3f;
     [Range(0,1)]public float friction = 0.34f;
-    public Vector3 Velocity { get { return velocity; } }
-    Vector3 velocity = Zero;
-    bool alreadyInitalized = false;
-    public Observation Observation;
+    public Material UndamagedMat;
+    public Material damagedMat;
+    public Material HardlydamagedMat;
+    [HideInInspector] public Vector3 Velocity;
+    public Observation Observation { get; set; }
+    public int MaxHealth { get; private set; }
+    public int Health { get; private set; }
+    Color Color;
+    /// <summary>
+    /// 初期化の一度のみ。
+    /// </summary>
     public override void Initialize()
     {
-        if (alreadyInitalized) return;
         GameManager = GetComponentInParent<GameManager>();
         Rigidbody = GetComponent<Rigidbody>();
         Collider = GetComponent<Collider>();
         BehaviorParameters = GetComponent<BehaviorParameters>();
         Renderer = GetComponent<Renderer>();
         Observation = new Observation(9);
-        alreadyInitalized = true;
-        velocity = Zero;
+        Velocity = Zero;
         lasttime =  Time.time-0.004f;
         deltatime = 0.004f;
         friction = friction < 1e-5f ? 1e-5f : friction;
     }
-    public void SetUp(Color color,Vector3 pos,Operator _operator,Type _type)
+    public void SetUp(Color color,Vector3 pos,Operator _operator,Type _type,int health = 3)
     {
+        Renderer.material = UndamagedMat;
         this.Renderer.material.color = color;
         transform.localPosition = pos;
         this._operator = _operator;
         this._type = _type;
-
+        MaxHealth = health;
+        Health = health;
+        Color = color;
         switch (_operator)
         {
             case Operator.Player:
@@ -114,16 +121,22 @@ public class Block : Agent
     {
         get { return this.gameObject.activeSelf; }
     }
-    /*TODO
     public void OnCollisionEnter(Collision collision)
     {
         var hitgameobj = collision.gameObject;
         if (hitgameobj.CompareTag("ball"))
         {
-            GameManager.OnBallHitBlock(this);
+            --Health;
+            if (Health <= 0)
+            {
+                GameManager.OnBallHitBlock(this);
+            }
+            else
+            {
+                ChangeMaterial(Health);
+            }
         }
     }
-    */
     public void OnTriggerStay(Collider other)
     {
         if (other.CompareTag("blocklimit"))
@@ -142,21 +155,41 @@ public class Block : Agent
     public void Move(Vector3 force,float accel,float maxspeed)
     {
         var dt = deltatime * 50f;
-        var v = velocity;
+        var v = Velocity;
         var a = force * accel;
-        velocity = (v - a / friction) * Mathf.Pow(1 - friction, dt) + a / friction;
-        velocity.y = 0;
-        var mag = velocity.magnitude;
+        Velocity = (v - a / friction) * Mathf.Pow(1 - friction, dt) + a / friction;
+        Velocity.y = 0;
+        var mag = Velocity.magnitude;
         if (mag > maxspeed)
-            velocity = velocity / mag * maxspeed;
-        Rigidbody.velocity += velocity;
+            Velocity = Velocity / mag * maxspeed;
+        Rigidbody.velocity += Velocity;
     }
     public void Stop()
     {
-        velocity = Zero;
+        Velocity = Zero;
         Rigidbody.velocity = Zero;
     }
-
+    private void ChangeMaterial(int health)
+    {
+        if (health == 1 || health < MaxHealth / 3)
+        {
+            Renderer.material = HardlydamagedMat;
+            Renderer.material.color = Color;
+        }
+        else if(health== 2 || health < MaxHealth * 2 / 3)
+        {
+            Renderer.material = damagedMat;
+            Renderer.material.color = Color;
+        }
+        else
+        {
+            if(Renderer.material != UndamagedMat)
+            {
+                Renderer.material = UndamagedMat;
+                Renderer.material.color = Color;
+            }
+        }
+    }
     float lasttime = 0f;
     float deltatime = 0.004f;
     private void TimerUpdate()
